@@ -11,21 +11,22 @@ import org.apache.spark.ml.clustering.BisectingKMeans
 import org.apache.spark.sql.Column
 import org.apache.spark.ml.Pipeline
 import org.apache.spark.ml.clustering.KMeans
-import org.apache.spark.ml.clustering.BisectingKMeans
 import org.apache.log4j._
 
 //Inicio de sesion en spark
-val spark = SparkSession.builder().getOrCreate()
-Logger.getLogger("org").setLevel(Level.ERROR)
 val spark = SparkSession.builder.master("local[*]").getOrCreate()
+Logger.getLogger("org").setLevel(Level.ERROR)
+
 
 //Cargar el archivo CSV
 val df = spark.read.option("inferSchema","true").csv("Iris.csv").toDF("SepalLength", "SepalWidth", "PetalLength", "PetalWidth","class")
 df.show()
 
-//Cargar CSV
+//Cargar Etiqueta
 val data = when($"class".contains("Iris-setosa"), 1.0).otherwise(when($"class".contains("Iris-virginica"), 3.0).otherwise(2.0))
 val data2 = df.withColumn("etiqueta", data)
+
+// Cargar el VectorAssembler
 val assembler = new VectorAssembler().setInputCols(Array("SepalLength", "SepalWidth", "PetalLength", "PetalWidth","etiqueta")).setOutputCol("features")
 
 //Transformacion de los datos
@@ -47,4 +48,6 @@ val model = bkm.fit(features)
 val WSSSE = model.computeCost(features)
 println(s"Within set sum of Squared Errors = $WSSSE")
 println("Cluster Centers: ")
-model.clusterCenters.foreach(println)
+
+val models = model.clusterCenters
+models.foreach(println)
